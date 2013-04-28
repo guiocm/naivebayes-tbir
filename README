@@ -1,0 +1,32 @@
+
+Code created for the final assignment of the Text Based Information Retrieval
+course at KULeuven.
+Implements classifiers based on Multinomial Naive Bayes, for patent 
+classification with the WIPO Alpha dataset.
+
+Usage:
+    
+    python nb.py <levels> <training_file> <test_file> <verbose>
+
+    levels 
+        Specify the number of classifier levels - 1 or 2.
+        With one level a single classifier is used (~81.7% accuracy).
+        With two levels, one classifier is used for the main class, and
+        8 classifiers are used within each main class (~79.7% accuracy).
+
+    training_file
+        File containing the training data.
+
+    test_file
+        File containing the test data.
+
+    verbose
+        Optional parameter that enables the output of the classification
+        result for each test sample.
+
+If no parameters are passed, the following is assumed:
+    python nb.py 1 wipoalpha-train.txt wipoalpha-test.txt
+
+
+Guilherme de Oliveira da Costa Marques
+
