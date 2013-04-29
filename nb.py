@@ -2,11 +2,14 @@ import sys
 from collections import defaultdict, Counter
 from math import log
 
+#
+# Main Classifier class, implements a common test function.
+#
 class Classifier:
     def __init__(self):
         pass
 
-    def test(self, samples):
+    def test(self, samples, verbose):
         rights = 0
         wrongs = 0
 
@@ -16,26 +19,26 @@ class Classifier:
             pred = [el[1] for el in output]
 
             if real[0] == pred[0]:
-                if VERBOSE:
+                if verbose:
                     print "correct TOP: real - "+str(real)+\
                         ", pred - "+str(pred)
                 rights = rights + 1
             elif real[0] in pred:
-                if VERBOSE:
+                if verbose:
                     print "correct GSS: real - "+str(real)+\
                         ", pred - "+str(pred)
                 rights = rights + 1
             elif pred[0] in real:
-                if VERBOSE: 
+                if verbose: 
                     print "correct ALL: real - "+str(real)+\
                         ", pred - "+str(pred)
                 rights = rights + 1
             else:
-                if VERBOSE:
+                if verbose:
                     print "WRONG: real - "+str(real)+", pred - "+str(pred)
                 wrongs = wrongs + 1
 
-        if VERBOSE:
+        if verbose:
             print ""
             print "finished"
         print "correct: " + str(rights)
@@ -84,47 +87,9 @@ class NB(Classifier):
 
 
 #
-# Preprocesses the input data, removing the lowest level of classification, 
-# and returning tuples of a list of classes and the feature dictionary.
+# Implements a Classifier with a two-level hierarchy as present in the 
+# patent classes.
 #
-def preprocess(data):
-    samples = []
-    for line in data:
-        parts = line.split(" ")
-        classes = parts.pop(0)
-        classes = [c[:-1] for c in classes.split(",")]
-
-        parts = [el.split(":") for el in parts]
-        features = {int(k):int(v) for k,v in parts}
-
-        samples.append((classes, features))
-
-    return samples
-
-
-def classtest(samples):
-    t = 0
-    g = 0
-    m = 0
-    w = 0
-
-    for real, features in samples:
-        cls = [x[0] for x in real]
-        pr = classbayes.classify_one(features)
-        pr = [x[1] for x in pr]
-
-        if cls[0] == pr[0]:
-            t += 1
-        elif pr[0] in cls:
-            g += 1
-        elif cls[0] in pr:
-            m += 1
-        else:
-            w += 1
-
-    print t, g, m, w
-    
-
 class TwolevelNB(Classifier):
     def __init__(self):
         self.classbayes = NB()
@@ -158,6 +123,25 @@ class TwolevelNB(Classifier):
         return sorted(output)[::-1][:3]
 
 
+#
+# Preprocesses the input data, removing the lowest level of classification, 
+# and returning tuples of a list of classes and the feature dictionary.
+#
+def preprocess(data):
+    samples = []
+    for line in data:
+        parts = line.split(" ")
+        classes = parts.pop(0)
+        classes = [c[:-1] for c in classes.split(",")]
+
+        parts = [el.split(":") for el in parts]
+        features = {int(k):int(v) for k,v in parts}
+
+        samples.append((classes, features))
+
+    return samples
+
+
 if __name__ == "__main__":
     LEVELS = "1"
     TRAIN = "wipoalpha-train.txt"
@@ -184,5 +168,5 @@ if __name__ == "__main__":
     with open(TEST, "r") as test_doc:
         test_samples = preprocess(test_doc.readlines())
 
-    classifier.test(test_samples)
+    classifier.test(test_samples, VERBOSE)
 
