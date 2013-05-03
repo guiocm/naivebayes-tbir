@@ -3,46 +3,85 @@ from collections import defaultdict, Counter
 from math import log
 
 #
-# Main Classifier class, implements a common test function.
+# Main Classifier class, implements common test functions.
 #
 class Classifier:
     def __init__(self):
         pass
 
-    def test(self, samples, verbose):
-        rights = 0
+    #
+    # Evaluates the classification results
+    # 
+    def eval(self, real_cl, pred_cl, verbose):
+	top = 0
+	guess = 0
+	ll = 0
         wrongs = 0
+	rights = 0
 
-        for real, features in samples:
-
-            output = self.classify_one(features)
-            pred = [el[1] for el in output]
+        for real, pred in zip(real_cl, pred_cl):
+	    corr = False
 
             if real[0] == pred[0]:
                 if verbose:
-                    print "correct TOP: real - "+str(real)+\
-                        ", pred - "+str(pred)
+                    print "correct TOP: real - " + str(real) + ", pred - " + str(pred)
                 rights = rights + 1
-            elif real[0] in pred:
+		top += 1
+		corr = True
+            if real[0] in pred:
                 if verbose:
-                    print "correct GSS: real - "+str(real)+\
-                        ", pred - "+str(pred)
-                rights = rights + 1
-            elif pred[0] in real:
+                    print "correct GSS: real - " + str(real) + ", pred - " + str(pred)
+                if not corr:
+		    rights = rights + 1
+		    corr = True
+		guess += 1
+            if pred[0] in real:
                 if verbose: 
-                    print "correct ALL: real - "+str(real)+\
-                        ", pred - "+str(pred)
-                rights = rights + 1
-            else:
+                    print "correct ALL: real - " + str(real) + ", pred - " + str(pred)
+		if not corr:
+		    rights = rights + 1
+		    corr = True
+		ll += 1
+            if not corr:
                 if verbose:
-                    print "WRONG: real - "+str(real)+", pred - "+str(pred)
+                    print "WRONG: real - " + str(real) + ", pred - " + str(pred)
                 wrongs = wrongs + 1
 
         if verbose:
             print ""
             print "finished"
-        print "correct: " + str(rights)
-        print "wrong: " + str(wrongs)
+	
+	total = rights+wrongs
+        print "correct TOP: " + str(top) + " - " + str(float(top)/total)[:6]
+        print "correct GSS: " + str(guess) + " - " + str(float(guess)/total)[:6]
+        print "correct ALL: " + str(ll) + " - " + str(float(ll)/total)[:6]
+        print "total correct: " + str(rights) + " - " + str(float(rights)/total)[:6]
+        print "wrong: " + str(wrongs) + " - " + str(float(wrongs)/total)[:6]
+
+
+    def strip_probs(self, classif):
+	return [cl[1] for cl in classif]
+
+    #
+    # Classifies all samples (with implementation-dependant function)
+    #
+    def classify(self, samples):
+	return [self.strip_probs(self.classify_one(sample)) for sample in samples]
+
+    #
+    # Main execution function, performs classification and output results to a file
+    #
+    def run(self, samples, verbose, result):
+	real = [spl[0] for spl in samples]
+	features = [spl[1] for spl in samples]
+
+	pred = self.classify(features)
+
+	with open(result, "w") as ofile:
+	    for sample in pred:
+		ofile.write(reduce(lambda x,y: x+" "+y, [el.upper() for el in sample])+"\n")
+	    
+	self.eval(real, pred, verbose)
 
 
 #
@@ -77,13 +116,6 @@ class NB(Classifier):
                     (self.f_totals[cl]+len(self.vocabulary)))
             probs.append((pr, cl))
         return sorted(probs)[::-1][:3]
-
-    def classify(self, samples):
-        ret = []
-        for sample in samples:
-            print sample
-            ret.append(classify_one(sample))
-        return ret
 
 
 #
@@ -142,10 +174,16 @@ def preprocess(data):
     return samples
 
 
+#
+# Top-level routine, reads and preprocesses the training and test files,
+# performs the initialization and training of the classifier, and
+# classifies and evaluates the performance on test samples.
+#
 if __name__ == "__main__":
     LEVELS = "1"
     TRAIN = "wipoalpha-train.txt"
     TEST = "wipoalpha-test.txt"
+    RESULT = "result.txt"
     VERBOSE = False
 
     if len(sys.argv) > 1:
@@ -168,5 +206,6 @@ if __name__ == "__main__":
     with open(TEST, "r") as test_doc:
         test_samples = preprocess(test_doc.readlines())
 
-    classifier.test(test_samples, VERBOSE)
+    classifier.run(test_samples, VERBOSE, RESULT)
+
 
